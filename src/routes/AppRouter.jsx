@@ -1,5 +1,5 @@
 import AuthLayout from "@/layout/AuthLayout";
-import MainLayout from "@/layout/mainLayout";
+import MainLayout from "@/layout/MainLayout";
 import Dashboard from "@/pages/ArchivistPages/Dashboard";
 import UploadDocument from "@/pages/ArchivistPages/UploadPage";
 // import ProtectedRoute from "@/layout/ProtectedRoute";
