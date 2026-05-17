@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+// import { useNavigate } from "react-router-dom";
 import {
   Eye,
   EyeOff,
@@ -20,11 +22,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { register } from "@/features/auth/authSlice";
 
 export default function RegisterForm() {
+  const dispatch = useDispatch();
+  // const navigate = useNavigate();
+  const { loading, error } = useSelector((state) => state.auth);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [validationError, setValidationError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -34,12 +43,41 @@ export default function RegisterForm() {
     confirmPassword: "",
   });
 
-  const handleChange = (field, value) =>
+  const handleChange = (field, value) => {
+    setValidationError(null);
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) =>
+  {
     e.preventDefault();
-    // handle registration logic
+    setValidationError(null);
+    setSuccessMsg(null);
+
+    if (form.password !== form.confirmPassword) {
+      setValidationError("كلمتا المرور غير متطابقتين");
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setValidationError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      return;
+    }
+
+    const result = await dispatch(
+      register({
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+      }),
+    );
+
+    if (register.fulfilled.match(result)) {
+      // Supabase sends a confirmation email — user must verify before login
+      setSuccessMsg(
+        "تم إنشاء حسابك بنجاح! تحقق من بريدك الإلكتروني لتأكيد الحساب.",
+      );
+    }
   };
 
   // shared input style
@@ -63,6 +101,8 @@ export default function RegisterForm() {
     fontWeight: 500,
   };
 
+  const displayError = validationError || error;
+
   return (
     <div className="flex flex-col items-center w-full">
       {/* Header */}
@@ -71,7 +111,6 @@ export default function RegisterForm() {
           className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 mx-auto shadow-sm"
           style={{ backgroundColor: "#352481" }}
         >
-          {/* Building icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-8 h-8"
@@ -89,7 +128,10 @@ export default function RegisterForm() {
         </div>
         <h1
           className="text-2xl font-semibold"
-          style={{ color: "#352481", fontFamily: "'IBM Plex Sans', sans-serif" }}
+          style={{
+            color: "#352481",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+          }}
         >
           الأرشيف الرقمي
         </h1>
@@ -100,6 +142,36 @@ export default function RegisterForm() {
           إنشاء حساب جديد في النظام المؤسسي
         </p>
       </div>
+
+      {/* Error Message */}
+      {displayError && (
+        <div
+          className="w-full mb-4 px-4 py-3 rounded-lg text-sm text-right"
+          style={{
+            backgroundColor: "#fef2f2",
+            color: "#991b1b",
+            border: "1px solid #fecaca",
+            fontFamily: "'Noto Sans', sans-serif",
+          }}
+        >
+          {displayError}
+        </div>
+      )}
+
+      {/* Success Message */}
+      {successMsg && (
+        <div
+          className="w-full mb-4 px-4 py-3 rounded-lg text-sm text-right"
+          style={{
+            backgroundColor: "#f0fdf4",
+            color: "#166534",
+            border: "1px solid #bbf7d0",
+            fontFamily: "'Noto Sans', sans-serif",
+          }}
+        >
+          {successMsg}
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
@@ -119,6 +191,8 @@ export default function RegisterForm() {
               placeholder="أدخل اسمك الكامل"
               value={form.fullName}
               onChange={(e) => handleChange("fullName", e.target.value)}
+              required
+              disabled={loading}
               style={inputStyle}
               className="transition-all focus-visible:ring-2"
             />
@@ -142,6 +216,8 @@ export default function RegisterForm() {
               placeholder="example@domain.com"
               value={form.email}
               onChange={(e) => handleChange("email", e.target.value)}
+              required
+              disabled={loading}
               style={{ ...inputStyle, textAlign: "left" }}
               className="transition-all focus-visible:ring-2"
             />
@@ -158,7 +234,10 @@ export default function RegisterForm() {
               className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10"
               style={{ color: "#797583" }}
             />
-            <Select onValueChange={(v) => handleChange("role", v)}>
+            <Select
+              onValueChange={(v) => handleChange("role", v)}
+              disabled={loading}
+            >
               <SelectTrigger
                 id="role"
                 className="w-full h-12 pr-10 transition-all focus:ring-2"
@@ -205,6 +284,8 @@ export default function RegisterForm() {
                 placeholder="••••••••"
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
+                required
+                disabled={loading}
                 style={{ ...inputStyle, paddingLeft: "40px" }}
                 className="transition-all focus-visible:ring-2"
               />
@@ -215,7 +296,11 @@ export default function RegisterForm() {
                 style={{ color: "#797583" }}
                 aria-label={showPassword ? "إخفاء" : "إظهار"}
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -235,7 +320,11 @@ export default function RegisterForm() {
                 type={showConfirm ? "text" : "password"}
                 placeholder="••••••••"
                 value={form.confirmPassword}
-                onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                onChange={(e) =>
+                  handleChange("confirmPassword", e.target.value)
+                }
+                required
+                disabled={loading}
                 style={{ ...inputStyle, paddingLeft: "40px" }}
                 className="transition-all focus-visible:ring-2"
               />
@@ -246,7 +335,11 @@ export default function RegisterForm() {
                 style={{ color: "#797583" }}
                 aria-label={showConfirm ? "إخفاء" : "إظهار"}
               >
-                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showConfirm ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -258,6 +351,7 @@ export default function RegisterForm() {
             id="terms"
             checked={agreed}
             onCheckedChange={(v) => setAgreed(!!v)}
+            disabled={loading}
             style={{ borderColor: "#c9c4d3" }}
             className="data-[state=checked]:bg-[#352481] data-[state=checked]:border-[#352481]"
           />
@@ -293,7 +387,7 @@ export default function RegisterForm() {
         {/* Submit */}
         <Button
           type="submit"
-          disabled={!agreed}
+          disabled={!agreed || loading}
           className="w-full h-12 flex items-center justify-center gap-2 font-medium shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "#352481",
@@ -302,10 +396,9 @@ export default function RegisterForm() {
             fontSize: "16px",
             borderRadius: "0.5rem",
           }}
-         
         >
-          إنشاء حساب
-          <UserPlus className="w-4 h-4" />
+          {loading ? "جارٍ إنشاء الحساب..." : "إنشاء حساب"}
+          {!loading && <UserPlus className="w-4 h-4" />}
         </Button>
       </form>
 
@@ -323,7 +416,7 @@ export default function RegisterForm() {
         >
           لديك حساب بالفعل؟{" "}
           <a
-            href="#"
+            href="/login"
             className="font-bold hover:underline transition-colors me-1"
             style={{ color: "#086b53" }}
           >

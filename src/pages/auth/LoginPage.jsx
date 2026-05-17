@@ -1,15 +1,28 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Mail, Lock, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { login } from "@/features/auth/authSlice";
 
 export default function LoginForm() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { loading, error } = useSelector((state) => state.auth);
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
- 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await dispatch(login({ email, password }));
+    if (login.fulfilled.match(result)) {
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -44,8 +57,23 @@ export default function LoginForm() {
         </p>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div
+          className="w-full mb-4 px-4 py-3 rounded-lg text-sm text-right"
+          style={{
+            backgroundColor: "#fef2f2",
+            color: "#991b1b",
+            border: "1px solid #fecaca",
+            fontFamily: "'Noto Sans', sans-serif",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
       {/* Form */}
-      <form onSubmit={() => {}} className="w-full flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
         {/* Email field */}
         <div className="flex flex-col gap-2">
           <Label
@@ -72,6 +100,8 @@ export default function LoginForm() {
               placeholder="user@archive.gov"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
               className="pr-10 pl-3 text-right transition-shadow"
               style={{
                 backgroundColor: "#f7f2fb",
@@ -114,6 +144,8 @@ export default function LoginForm() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
               className="pr-10 pl-10 transition-shadow"
               style={{
                 backgroundColor: "#f7f2fb",
@@ -132,7 +164,9 @@ export default function LoginForm() {
               onClick={() => setShowPassword((v) => !v)}
               className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors"
               style={{ color: "#797583" }}
-              aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+              aria-label={
+                showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"
+              }
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />
@@ -146,7 +180,8 @@ export default function LoginForm() {
         {/* Submit button */}
         <Button
           type="submit"
-          className="w-full mt-1 flex items-center justify-center gap-2 text-sm font-medium shadow-sm transition-colors"
+          disabled={loading}
+          className="w-full mt-1 flex items-center justify-center gap-2 text-sm font-medium shadow-sm transition-colors disabled:opacity-70"
           style={{
             backgroundColor: "#352481",
             color: "#ffffff",
@@ -158,10 +193,9 @@ export default function LoginForm() {
             paddingBottom: "12px",
             height: "auto",
           }}
-        
         >
-          تسجيل الدخول
-          <LogIn className="w-4 h-4" />
+          {loading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
+          {!loading && <LogIn className="w-4 h-4" />}
         </Button>
       </form>
 
@@ -171,7 +205,7 @@ export default function LoginForm() {
         style={{ borderTop: "1px solid rgba(201,196,211,0.5)" }}
       >
         <a
-          href="#"
+          href="/register"
           className="text-sm font-medium transition-colors"
           style={{
             color: "#352481",
@@ -179,13 +213,12 @@ export default function LoginForm() {
             fontSize: "14px",
             lineHeight: "20px",
           }}
-        
         >
           إنشاء حساب
         </a>
         <span style={{ color: "#c9c4d3" }}>•</span>
         <a
-          href="#"
+          href="/forgot-password"
           className="text-sm font-medium transition-colors"
           style={{
             color: "#352481",
@@ -193,7 +226,6 @@ export default function LoginForm() {
             fontSize: "14px",
             lineHeight: "20px",
           }}
-        
         >
           نسيت كلمة المرور؟
         </a>
