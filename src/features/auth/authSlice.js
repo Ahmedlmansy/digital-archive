@@ -51,10 +51,15 @@ export const checkAuth = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const session = await getCurrentSession();
-
       if (!session) return null;
 
-      const profile = await getProfile(session.user.id);
+      // جربي تجيبي الـ profile، لو فشل مش مشكلة
+      let profile = null;
+      try {
+        profile = await getProfile(session.user.id);
+      } catch {
+        console.warn("Could not fetch profile");
+      }
 
       return {
         session,

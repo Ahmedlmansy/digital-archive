@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Settings,
-  Bell,
   Search,
   LayoutDashboard,
   Upload,
@@ -10,25 +10,67 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { logout } from "@/features/auth/authSlice";
 
-const NAV_ITEMS = [
-  { label: "لوحة التحكم", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "رفع وثيقة", icon: Upload, href: "/upload" },
-  { label: "عرض المستندات", icon: FileText, href: "/documents" },
-  { label: "البحث", icon: Search, href: "/search" },
-];
+// ── Nav items per role ────────────────────────────────────────────────────────
+const NAV_BY_ROLE = {
+  archivist: [
+    { label: "لوحة التحكم", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "رفع وثيقة", icon: Upload, href: "/upload" },
+    { label: "عرض المستندات", icon: FileText, href: "/documents" },
+    { label: "البحث", icon: Search, href: "/search" },
+    { label: "المستخدمون", icon: Users, href: "/users" },
+  ],
+  researcher: [
+    { label: "عرض المستندات", icon: FileText, href: "/documents" },
+    { label: "البحث", icon: Search, href: "/search" },
+  ],
+  visitor: [{ label: "عرض المستندات", icon: FileText, href: "/documents" }],
+};
+
+// ── Avatar initials helper ────────────────────────────────────────────────────
+function getInitials(name = "") {
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) return parts[0][0] ?? "؟";
+  return (parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "");
+}
+
+// ── Role label in Arabic ──────────────────────────────────────────────────────
+const ROLE_LABEL = {
+  archivist: "أرشيفي",
+  researcher: "باحث",
+  visitor: "زائر",
+};
 
 export default function MainLayout() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { profile } = useSelector((state) => state.auth);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const role = profile?.role ?? "visitor";
+  const navItems = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.visitor;
+  const initials = getInitials(profile?.full_name);
+
+  const handleLogout = async () => {
+    await dispatch(logout());
+    navigate("/login");
+  };
+
   return (
-    <div dir="rtl" className="min-h-screen" style={{ backgroundColor: "#f1ecf5" }}>
-      {/* ── HEADER ── */}
+    <div
+      dir="rtl"
+      className="min-h-screen"
+      style={{ backgroundColor: "#f1ecf5" }}
+    >
+      {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <header
-        className="fixed top-0 right-0 w-full z-50 flex flex-row items-center justify-between h-20 border-b"
+        className="fixed top-0 right-0 w-full z-50 flex items-center justify-between h-20 border-b"
         style={{
           backgroundColor: "#fdf8ff",
           borderColor: "#c9c4d3",
@@ -36,9 +78,8 @@ export default function MainLayout() {
           boxShadow: "0 1px 4px rgba(28,27,33,0.06)",
         }}
       >
-        {/* Right: Logo */}
+        {/* Right: hamburger + logo */}
         <div className="flex items-center gap-3">
-          {/* Mobile hamburger */}
           <button
             className="flex lg:hidden items-center justify-center w-9 h-9 rounded-full transition-colors"
             style={{ color: "#352481" }}
@@ -52,14 +93,13 @@ export default function MainLayout() {
             style={{
               color: "#352481",
               fontFamily: "'IBM Plex Sans', sans-serif",
-              lineHeight: "32px",
             }}
           >
             الأرشيف الرقمي
           </span>
         </div>
 
-        {/* Center: Search */}
+        {/* Center: search */}
         <div className="hidden md:flex flex-1 justify-center max-w-xl px-6">
           <div className="relative w-full">
             <Search
@@ -81,41 +121,39 @@ export default function MainLayout() {
           </div>
         </div>
 
-        {/* Left: Actions + Avatar */}
+        {/* Left: settings + avatar */}
         <div className="flex items-center gap-2">
           <button
             className="flex items-center justify-center w-9 h-9 rounded-full transition-colors active:scale-95"
             style={{ color: "#352481" }}
-           
             aria-label="الإعدادات"
           >
             <Settings className="w-5 h-5" />
           </button>
-          <button
-            className="flex items-center justify-center w-9 h-9 rounded-full transition-colors active:scale-95"
-            style={{ color: "#352481" }}
-           
-            aria-label="الإشعارات"
-          >
-            <Bell className="w-5 h-5" />
-          </button>
-
-          <div className="h-7 w-px mx-1" style={{ backgroundColor: "#c9c4d3" }} />
 
           <div
-            className="w-10 h-10 rounded-full overflow-hidden border"
-            style={{ borderColor: "#c9c4d3" }}
+            className="h-7 w-px mx-1"
+            style={{ backgroundColor: "#c9c4d3" }}
+          />
+
+          {/* Avatar initials */}
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center select-none font-semibold text-sm border"
+            style={{
+              backgroundColor: "#352481",
+              color: "#ffffff",
+              borderColor: "#4c3d99",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              letterSpacing: "0.05em",
+            }}
+            title={profile?.full_name}
           >
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuALvCJCzzj3W2eepwTwzao2X14JYBHKC3JImcPMsvyagRqXpcCv5Ti1MTc3KjtAhjHLMI9sBaBiEmfEZNhdqgEOLaRf-hxyqgKIuH1MK8rEsr6JxLNnh-aW4Qsz41xXuS6PXHgwXoxcsDvWFCAFUVjfLY_O2JT4EcgBo9Nj7grF1pMXRiQEgyRCsH4m3ZUlFkQHjNuKS7ohJTTwy24L2ZRlPVc1Ps3A-VzJxUa-6visSEX3hIIXNWMnJuIIRwRiGWYLuJR5yI1SpMk"
-              alt="صورة المستخدم"
-              className="w-full h-full object-cover"
-            />
+            {initials}
           </div>
         </div>
       </header>
 
-      {/* ── SIDEBAR OVERLAY (mobile) ── */}
+      {/* ── SIDEBAR OVERLAY (mobile) ───────────────────────────────────────── */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/40 lg:hidden"
@@ -123,12 +161,11 @@ export default function MainLayout() {
         />
       )}
 
-      {/* ── SIDEBAR ── */}
+      {/* ── SIDEBAR ───────────────────────────────────────────────────────── */}
       <nav
         className={cn(
-          "fixed top-0 right-0 h-full z-40 pt-20 pb-8 flex flex-col transition-transform duration-300",
-          "w-72",
-          sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+          "fixed top-0 right-0 h-full z-40 pt-20 pb-8 flex flex-col transition-transform duration-300 w-72",
+          sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0",
         )}
         style={{
           backgroundColor: "#fdf8ff",
@@ -146,39 +183,41 @@ export default function MainLayout() {
           <X className="w-4 h-4" />
         </button>
 
-        {/* Brand block */}
+        {/* User info block */}
         <div className="px-6 mb-5 flex flex-col items-center text-center">
+          {/* Big avatar */}
           <div
-            className="w-20 h-20 rounded-lg flex items-center justify-center mb-4 shadow-sm"
-            style={{ backgroundColor: "#4c3d99" }}
+            className="w-20 h-20 rounded-full flex items-center justify-center mb-3 text-3xl font-bold select-none"
+            style={{
+              backgroundColor: "#352481",
+              color: "#ffffff",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+            }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-10 h-10"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="#bfb3ff"
-              strokeWidth={1.4}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"
-              />
-            </svg>
+            {initials}
           </div>
+
           <h2
-            className="text-2xl font-semibold"
-            style={{ color: "#352481", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            className="text-lg font-semibold leading-snug"
+            style={{
+              color: "#1c1b21",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+            }}
           >
-            الأرشيف الرقمي
+            {profile?.full_name ?? "مستخدم"}
           </h2>
-          <p
-            className="text-sm mt-1"
-            style={{ color: "#484551", fontFamily: "'Noto Sans', sans-serif" }}
+
+          {/* Role badge */}
+          <span
+            className="mt-1 px-3 py-0.5 rounded-full text-xs font-medium"
+            style={{
+              backgroundColor: "rgba(53,36,129,0.1)",
+              color: "#352481",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+            }}
           >
-            نظام الأرشفة المؤسسي
-          </p>
+            {ROLE_LABEL[role]}
+          </span>
 
           {/* Advanced search button */}
           <button
@@ -188,7 +227,6 @@ export default function MainLayout() {
               color: "#ffffff",
               fontFamily: "'IBM Plex Sans', sans-serif",
             }}
-           
           >
             <Search className="w-4 h-4" />
             <span>بحث متقدم</span>
@@ -196,21 +234,22 @@ export default function MainLayout() {
         </div>
 
         {/* Divider */}
-        <div className="mx-6 mb-2 h-px" style={{ backgroundColor: "#ebe6ef" }} />
+        <div
+          className="mx-6 mb-2 h-px"
+          style={{ backgroundColor: "#ebe6ef" }}
+        />
 
-        {/* Nav items */}
+        {/* Nav items — filtered by role */}
         <div className="flex-1 flex flex-col gap-1 px-3 mt-1 overflow-y-auto">
-          {NAV_ITEMS.map(({ label, icon: Icon, href }) => (
+          {navItems.map(({ label, icon: Icon, href }) => (
             <NavLink
               key={href}
               to={href}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group text-sm font-medium",
-                  isActive
-                    ? "border-r-4 rounded-r-none"
-                    : "hover:bg-[#f1ecf5]"
+                  "flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium",
+                  isActive ? "border-r-4 rounded-r-none" : "hover:bg-[#f1ecf5]",
                 )
               }
               style={({ isActive }) =>
@@ -242,23 +281,25 @@ export default function MainLayout() {
 
         {/* Logout */}
         <div className="px-3 mt-4">
-          <div className="mx-3 mb-2 h-px" style={{ backgroundColor: "#ebe6ef" }} />
-          <a
-            href="#"
-            className="flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium"
+          <div
+            className="mx-3 mb-2 h-px"
+            style={{ backgroundColor: "#ebe6ef" }}
+          />
+          <button
+            onClick={handleLogout}
+            className="w-full flex flex-row-reverse items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium hover:bg-red-50 active:scale-95"
             style={{
               color: "#ba1a1a",
               fontFamily: "'IBM Plex Sans', sans-serif",
             }}
-          
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             <span>تسجيل الخروج</span>
-          </a>
+          </button>
         </div>
       </nav>
 
-      {/* ── MAIN CONTENT ── */}
+      {/* ── MAIN CONTENT ──────────────────────────────────────────────────── */}
       <main
         className="pt-20 min-h-screen transition-all duration-300 lg:pr-72"
         style={{ backgroundColor: "#f1ecf5" }}
