@@ -21,6 +21,8 @@ import UploadDocument from "@/pages/ArchivistPages/UploadPage";
 // Misc
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "@/pages/NotFound";
+import UsersPage from "@/pages/ArchivistPages/UsersPage";
+import DocumentArchive from "@/pages/AllDocumentArchive";
 
 const router = createBrowserRouter([
   // ─── Auth pages (guest only) ──────────────────────────────────────────────
@@ -39,7 +41,8 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       // Everyone can view documents
-      { path: "document/:id", element: <DocumentViewer /> },
+      { path: "documents/:id", element: <DocumentViewer /> },
+      { path: "documents", element: <DocumentArchive /> },
 
       // Unauthorized page
       { path: "unauthorized", element: <Unauthorized /> },
@@ -47,7 +50,7 @@ const router = createBrowserRouter([
       // ── Researcher + Archivist ──────────────────────────────────────────
       {
         element: <ProtectedRoute allowedRoles={["researcher", "archivist"]} />,
-        // children: [{ path: "search", element: <SearchPage /> }],
+        children: [{ path: "users", element: <UsersPage /> }],
       },
 
       // ── Archivist only ──────────────────────────────────────────────────
