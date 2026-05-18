@@ -12,7 +12,7 @@ import {
   analyzeWithAi,
   uploadDoc,
   resetDocumentState,
-} from "@/features/documents/DocumentSlice";
+} from "@/features/documents/DocumentSlices";
 
 // ── Empty form — all Dublin Core fields ──────────────────────────────────────
 const EMPTY_FORM = {
