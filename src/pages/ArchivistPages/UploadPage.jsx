@@ -1,92 +1,139 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { Save, Info, CheckCircle, AlertCircle } from "lucide-react";
+
+import { FileDropZone } from "@/components/upload/FileDropZone";
+import { AiAnalysisCard } from "@/components/upload/AiAnalysisCard";
+import { MetadataForm } from "@/components/upload/MetadataForm";
+
 import {
-  CloudUpload,
-  Sparkles,
-  Save,
-  X,
-  Info,
-  CalendarDays,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  extractText,
+  analyzeWithAi,
+  uploadDoc,
+  resetDocumentState,
+} from "@/features/documents/DocumentSlice";
 
-const labelStyle = {
-  color: "#1c1b21",
-  fontFamily: "'IBM Plex Sans', sans-serif",
-  fontSize: "14px",
-  fontWeight: 500,
-  lineHeight: "20px",
+// ── Empty form — all Dublin Core fields ──────────────────────────────────────
+const EMPTY_FORM = {
+  title: "",
+  identifier: "",
+  creator: "",
+  contributor: "",
+  subject: "",
+  description: "",
+  publisher: "",
+  date: "",
+  source: "",
+  docType: "Text",
+  language: "ar",
+  relation: "",
+  coverage: "",
+  rights: "All rights reserved",
+  classification: "",
 };
-
-const inputStyle = {
-  backgroundColor: "#fdf8ff",
-  borderColor: "#c9c4d3",
-  color: "#1c1b21",
-  fontFamily: "'Noto Sans', sans-serif",
-  fontSize: "16px",
-  borderRadius: "0.5rem",
-};
-
-function Field({ label, required, children }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label style={labelStyle}>
-        {label} {required && <span style={{ color: "#ba1a1a" }}>*</span>}
-      </Label>
-      {children}
-    </div>
-  );
-}
 
 export default function UploadDocument() {
-  const fileInputRef = useRef(null);
-  const [dragging, setDragging] = useState(false);
-  const [droppedFile, setDroppedFile] = useState(null);
-  const [form, setForm] = useState({
-    title: "",
-    author: "",
-    subject: "",
-    description: "",
-    publisher: "",
-    date: "",
-    classification: "",
-    language: "العربية",
-    rights: "",
-  });
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const set = (field) => (e) =>
-    setForm((p) => ({ ...p, [field]: e.target.value }));
+  // ── Redux state ─────────────────────────────────────────────────────────────
+  const {
+    ocrText,
+    fileType,
+    ocrStatus,
+    ocrError,
+    aiResult,
+    aiStatus,
+    aiError,
+    uploadStatus,
+    uploadError,
+  } = useSelector((state) => state.documents);
 
-  const onDragOver = useCallback((e) => {
-    e.preventDefault();
-    setDragging(true);
-  }, []);
-  const onDragLeave = useCallback(() => setDragging(false), []);
-  const onDrop = useCallback((e) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) setDroppedFile(file);
-  }, []);
-  const onFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) setDroppedFile(file);
+  // ── Local state ─────────────────────────────────────────────────────────────
+  const [file, setFile] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [aiTags, setAiTags] = useState([]);
+
+  // ── Derived flags ────────────────────────────────────────────────────────────
+  const ocrLoading = ocrStatus === "loading";
+  const aiLoading = aiStatus === "loading";
+  const uploading = uploadStatus === "loading";
+  const uploadSuccess = uploadStatus === "succeeded";
+  const aiDone = aiStatus === "succeeded";
+  const isBusy = ocrLoading || aiLoading || uploading;
+
+  // ── Sync AI result → form fields ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!aiResult) return;
+    setForm((p) => ({
+      ...p,
+      title: aiResult.title || p.title,
+      creator: aiResult.author || p.creator,
+      subject: aiResult.subject || p.subject,
+      description: aiResult.description || p.description,
+      rights: aiResult.rights || p.rights,
+      language: aiResult.language || p.language,
+      classification: aiResult.category || p.classification,
+      coverage: aiResult.coverage || p.coverage,
+      source: aiResult.source || p.source,
+    }));
+    setAiTags(aiResult.tags ?? []);
+  }, [aiResult]);
+
+  // ── Redirect after successful upload ─────────────────────────────────────────
+  useEffect(() => {
+    if (uploadSuccess) {
+      setTimeout(() => {
+        dispatch(resetDocumentState());
+        navigate("/dashboard");
+      }, 1800);
+    }
+  }, [uploadSuccess]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+  const handleFieldChange = (field, value) =>
+    setForm((p) => ({ ...p, [field]: value }));
+
+  const handleFileChange = (f) => {
+    setFile(f);
+    setAiTags([]);
+    setForm(EMPTY_FORM);
+    dispatch(resetDocumentState());
   };
-  const handleSubmit = (e) => {
+
+  const handleRemoveFile = () => {
+    setFile(null);
+    setAiTags([]);
+    setForm(EMPTY_FORM);
+    dispatch(resetDocumentState());
+  };
+
+  // OCR → AI in sequence
+  const handleAnalyze = async () => {
+    if (!file) return;
+    const ocrResult = await dispatch(extractText(file));
+    if (extractText.rejected.match(ocrResult)) return;
+    await dispatch(analyzeWithAi(ocrResult.payload.text));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!file) return;
+    dispatch(
+      uploadDoc({
+        file,
+        fileType,
+        form,
+        aiSummary: form.description,
+        aiTags,
+      }),
+    );
   };
 
   return (
     <div className="max-w-[1440px] mx-auto">
-      {/* Page header */}
+      {/* Header */}
       <header className="mb-6">
         <h1
           className="font-semibold"
@@ -113,6 +160,36 @@ export default function UploadDocument() {
         </p>
       </header>
 
+      {/* Feedback banners */}
+      {uploadSuccess && (
+        <div
+          className="mb-4 px-4 py-3 rounded-lg flex items-center gap-2"
+          style={{
+            backgroundColor: "#f0fdf4",
+            border: "1px solid #bbf7d0",
+            color: "#166534",
+            fontFamily: "'Noto Sans', sans-serif",
+          }}
+        >
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          تم رفع الوثيقة بنجاح! جارٍ التوجيه...
+        </div>
+      )}
+      {uploadError && (
+        <div
+          className="mb-4 px-4 py-3 rounded-lg flex items-center gap-2"
+          style={{
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fecaca",
+            color: "#991b1b",
+            fontFamily: "'Noto Sans', sans-serif",
+          }}
+        >
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {uploadError}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Metadata form — 7 cols */}
@@ -137,318 +214,86 @@ export default function UploadDocument() {
               البيانات الوصفية
             </h2>
 
-            <div className="flex flex-col gap-4">
-              <Field label="العنوان" required>
-                <Input
-                  id="doc-title"
-                  type="text"
-                  placeholder="أدخل عنوان الوثيقة الرئيسي"
-                  value={form.title}
-                  onChange={set("title")}
-                  required
-                  style={inputStyle}
-                  className="transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                />
-              </Field>
+            <MetadataForm
+              form={form}
+              onChange={handleFieldChange}
+              disabled={isBusy}
+            />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="المؤلف">
-                  <Input
-                    id="doc-author"
-                    type="text"
-                    placeholder="اسم الكاتب أو المنشئ"
-                    value={form.author}
-                    onChange={set("author")}
-                    style={inputStyle}
-                    className="transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                  />
-                </Field>
-                <Field label="الموضوع">
-                  <Input
-                    id="doc-subject"
-                    type="text"
-                    placeholder="الكلمات المفتاحية أو التصنيف العام"
-                    value={form.subject}
-                    onChange={set("subject")}
-                    style={inputStyle}
-                    className="transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                  />
-                </Field>
-              </div>
-
-              <Field label="الوصف">
-                <Textarea
-                  id="doc-desc"
-                  placeholder="ملخص أو وصف تفصيلي لمحتوى الوثيقة..."
-                  rows={4}
-                  value={form.description}
-                  onChange={set("description")}
-                  className="resize-none transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                  style={inputStyle}
-                />
-              </Field>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="الناشر">
-                  <Input
-                    id="doc-publisher"
-                    type="text"
-                    placeholder="الجهة المصدرة أو الناشرة"
-                    value={form.publisher}
-                    onChange={set("publisher")}
-                    style={inputStyle}
-                    className="transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                  />
-                </Field>
-                <Field label="التاريخ">
-                  <div className="relative">
-                    <CalendarDays
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                      style={{ color: "#797583" }}
-                    />
-                    <Input
-                      id="doc-date"
-                      type="date"
-                      value={form.date}
-                      onChange={set("date")}
-                      style={{ ...inputStyle, paddingLeft: "40px" }}
-                      className="transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                    />
-                  </div>
-                </Field>
-              </div>
-
+            {/* AI tags */}
+            {aiTags.length > 0 && (
               <div
-                className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 mt-1 border-t"
+                className="flex flex-wrap gap-2 pt-3 border-t"
                 style={{ borderColor: "rgba(201,196,211,0.35)" }}
               >
-                <Field label="التصنيف">
-                  <Select
-                    onValueChange={(v) =>
-                      setForm((p) => ({ ...p, classification: v }))
-                    }
+                <span
+                  style={{
+                    color: "#797583",
+                    fontFamily: "'IBM Plex Sans', sans-serif",
+                    fontSize: "13px",
+                    alignSelf: "center",
+                  }}
+                >
+                  وسوم AI:
+                </span>
+                {aiTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: "rgba(53,36,129,0.08)",
+                      color: "#352481",
+                      fontFamily: "'Noto Sans', sans-serif",
+                    }}
                   >
-                    <SelectTrigger
-                      id="doc-class"
-                      className="h-10 transition-all focus:ring-1 focus:ring-[#352481]"
-                      style={{ ...inputStyle, height: "40px" }}
-                    >
-                      <SelectValue placeholder="اختر..." />
-                    </SelectTrigger>
-                    <SelectContent
-                      style={{ fontFamily: "'Noto Sans', sans-serif" }}
-                    >
-                      <SelectItem value="public">عام</SelectItem>
-                      <SelectItem value="internal">داخلي</SelectItem>
-                      <SelectItem value="confidential">سري</SelectItem>
-                      <SelectItem value="top-secret">سري للغاية</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="اللغة">
-                  <Input
-                    id="doc-lang"
-                    type="text"
-                    value={form.language}
-                    onChange={set("language")}
-                    style={inputStyle}
-                    className="transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                  />
-                </Field>
-                <Field label="الحقوق">
-                  <Input
-                    id="doc-rights"
-                    type="text"
-                    placeholder="حقوق النشر والملكية"
-                    value={form.rights}
-                    onChange={set("rights")}
-                    style={inputStyle}
-                    className="transition-all focus-visible:ring-1 focus-visible:ring-[#352481]"
-                  />
-                </Field>
+                    {tag}
+                  </span>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Dropzone + AI card — 5 cols */}
-          <div className="lg:col-span-5 flex flex-col gap-5">
-            {/* Dropzone */}
+          {/* Right column — 5 cols */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            {/* File drop zone */}
             <div
-              className="rounded-xl border-2 border-dashed p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 min-h-[280px]"
-              style={{
-                backgroundColor: dragging ? "#ebe6ef" : "#f7f2fb",
-                borderColor: dragging ? "#352481" : "#c9c4d3",
-              }}
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx"
-                className="hidden"
-                onChange={onFileChange}
-              />
-
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-                style={{ backgroundColor: "rgba(76,61,153,0.12)" }}
-              >
-                <CloudUpload className="w-8 h-8" style={{ color: "#352481" }} />
-              </div>
-
-              {droppedFile ? (
-                <>
-                  <h3
-                    className="font-semibold mb-1"
-                    style={{
-                      color: "#086b53",
-                      fontFamily: "'IBM Plex Sans', sans-serif",
-                      fontSize: "18px",
-                    }}
-                  >
-                    {droppedFile.name}
-                  </h3>
-                  <p
-                    className="text-sm"
-                    style={{
-                      color: "#484551",
-                      fontFamily: "'Noto Sans', sans-serif",
-                    }}
-                  >
-                    {(droppedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-3 text-xs flex items-center gap-1"
-                    style={{
-                      color: "#ba1a1a",
-                      fontFamily: "'Noto Sans', sans-serif",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDroppedFile(null);
-                    }}
-                  >
-                    <X className="w-3 h-3" /> إزالة الملف
-                  </button>
-                </>
-              ) : (
-                <>
-                  <h3
-                    className="font-semibold mb-1"
-                    style={{
-                      color: "#1c1b21",
-                      fontFamily: "'IBM Plex Sans', sans-serif",
-                      fontSize: "18px",
-                    }}
-                  >
-                    اسحب وأفلت الملف هنا
-                  </h3>
-                  <p
-                    className="text-sm mb-4"
-                    style={{
-                      color: "#484551",
-                      fontFamily: "'Noto Sans', sans-serif",
-                    }}
-                  >
-                    أو انقر لاختيار ملف من جهازك
-                  </p>
-                  <p
-                    className="text-xs mb-4"
-                    style={{
-                      color: "#797583",
-                      fontFamily: "'Noto Sans', sans-serif",
-                    }}
-                  >
-                    الصيغ المدعومة: PDF, DOCX (الحد الأقصى: 50MB)
-                  </p>
-                  <button
-                    type="button"
-                    className="px-5 py-2 rounded-lg text-sm font-medium border transition-colors"
-                    style={{
-                      backgroundColor: "#ffffff",
-                      borderColor: "#c9c4d3",
-                      color: "#1c1b21",
-                      fontFamily: "'IBM Plex Sans', sans-serif",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f1ecf5")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#ffffff")
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fileInputRef.current?.click();
-                    }}
-                  >
-                    استعراض الملفات
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* AI card */}
-            <div
-              className="rounded-xl p-6 flex flex-col items-center text-center relative overflow-hidden border"
+              className="rounded-xl p-6 border"
               style={{
                 backgroundColor: "#ffffff",
                 borderColor: "rgba(201,196,211,0.35)",
-                borderTop: "4px solid #BA7517",
                 boxShadow: "0 2px 8px rgba(28,27,33,0.05)",
               }}
             >
-              <div
-                className="absolute -right-4 -top-4 w-24 h-24 rounded-full pointer-events-none"
-                style={{
-                  backgroundColor: "rgba(186,117,23,0.06)",
-                  filter: "blur(20px)",
-                }}
-              />
-              <Sparkles className="w-7 h-7 mb-3" style={{ color: "#BA7517" }} />
-              <h4
-                className="font-semibold mb-2"
+              <h2
+                className="font-semibold pb-4 mb-4 border-b"
                 style={{
                   color: "#1c1b21",
                   fontFamily: "'IBM Plex Sans', sans-serif",
-                  fontSize: "18px",
+                  fontSize: "24px",
+                  lineHeight: "32px",
+                  borderColor: "rgba(201,196,211,0.35)",
                 }}
               >
-                الاستخلاص الذكي
-              </h4>
-              <p
-                className="text-sm mb-5"
-                style={{
-                  color: "#484551",
-                  fontFamily: "'Noto Sans', sans-serif",
-                  lineHeight: "20px",
-                }}
-              >
-                دع النظام يقرأ الوثيقة ويستخرج البيانات الوصفية الأساسية
-                تلقائياً لتوفير الوقت.
-              </p>
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-lg shadow-sm transition-colors text-sm font-medium active:scale-95"
-                style={{
-                  backgroundColor: "#086b53",
-                  color: "#ffffff",
-                  fontFamily: "'IBM Plex Sans', sans-serif",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#0f6e56")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#086b53")
-                }
-              >
-                <Sparkles className="w-4 h-4" />
-                تصنيف تلقائي بالذكاء الاصطناعي
-              </button>
+                الملف
+              </h2>
+              <FileDropZone
+                file={file}
+                onChange={handleFileChange}
+                onRemove={handleRemoveFile}
+              />
             </div>
+
+            {/* AI card */}
+            <AiAnalysisCard
+              file={file}
+              ocrLoading={ocrLoading}
+              ocrError={ocrError}
+              ocrText={ocrText}
+              aiLoading={aiLoading}
+              aiError={aiError}
+              aiDone={aiDone}
+              onAnalyze={handleAnalyze}
+            />
           </div>
         </div>
 
@@ -473,13 +318,18 @@ export default function UploadDocument() {
                 fontFamily: "'Noto Sans', sans-serif",
               }}
             >
-              تأكد من مراجعة البيانات قبل الحفظ النهائي في الأرشيف.
+              {aiDone
+                ? "راجع البيانات المستخلصة وعدّل ما يلزم قبل الحفظ."
+                : "يمكنك تعبئة البيانات يدوياً أو استخدام التصنيف التلقائي أولاً."}
             </span>
           </div>
+
           <div className="flex gap-3 w-full sm:w-auto">
             <button
               type="button"
-              className="flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-colors"
+              disabled={isBusy}
+              onClick={() => navigate(-1)}
+              className="flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
               style={{
                 color: "#1c1b21",
                 fontFamily: "'IBM Plex Sans', sans-serif",
@@ -493,23 +343,30 @@ export default function UploadDocument() {
             >
               إلغاء
             </button>
+
             <button
               type="submit"
-              className="flex-1 sm:flex-none px-8 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center justify-center gap-2 active:scale-95"
+              disabled={!file || !form.title || isBusy}
+              className="flex-1 sm:flex-none px-8 py-2 rounded-lg text-sm font-medium shadow-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: "#352481",
                 color: "#ffffff",
                 fontFamily: "'IBM Plex Sans', sans-serif",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#4c3d99")
+                !isBusy && (e.currentTarget.style.backgroundColor = "#4c3d99")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "#352481")
               }
             >
-              <Save className="w-4 h-4" />
-              رفع الوثيقة
+              {uploading ? (
+                "جارٍ الرفع..."
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> رفع الوثيقة
+                </>
+              )}
             </button>
           </div>
         </div>
