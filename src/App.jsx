@@ -17,7 +17,6 @@ function App() {
       } catch (err) {
         console.log("checkAuth failed:", err);
       } finally {
-        // ← مهم: نعلّم authReady true حتى لو فشل
         setAuthReady(true);
       }
     };
@@ -26,7 +25,6 @@ function App() {
   }, [dispatch]);
 
   useEffect(() => {
-    // ← ما نشتغلش لحد ما checkAuth يخلص
     if (!authReady) return;
 
     // 2. Listen for auth changes
@@ -65,7 +63,11 @@ function App() {
     return () => subscription.unsubscribe();
   }, [authReady, dispatch]);
 
-  return <AppRouter />;
+  if (!authReady) {
+    return null; 
+  }
+
+  return <AppRouter />
 }
 
 export default App;
