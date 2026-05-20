@@ -21,7 +21,7 @@ import UsersPage from "@/pages/ArchivistPages/UsersPage";
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "@/pages/NotFound";
 import AddUserPage from "@/pages/ArchivistPages/AddUserPage";
-import DashboardPage from "@/pages/ArchivistPages/DashboardPage";
+import DashboardPage from "@/pages/ArchivistPages/DashboardPage.jsx";
 import AdvancedSearchPage from "@/pages/ArchivistPages/AdvancedSearchPage";
 
 // ═══════════════════════════════════════════════════════════════
@@ -127,7 +127,7 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute allowedRoles={["archivist"]} />,
         children: [
-          { path: "dashboard", element: <Dashboard /> },
+          { path: "dashboard", element: <DashboardPage /> },
           { path: "upload", element: <UploadDocument /> },
           { path: "add-user", element: <AddUserPage /> },
           { path: "advanced-search", element: <AdvancedSearchPage /> },

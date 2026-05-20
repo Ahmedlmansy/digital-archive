@@ -810,7 +810,7 @@ export default function DocumentsPage()
                           <button
                             className="hover:text-[#352481] transition-colors"
                             title="عرض التفاصيل"
-                            onClick={() => navigate(`/documents/${doc.id}`)}
+                            onClick={() => navigate(`/app/documents/${doc.id}`)}
                           >
                             <Eye className="w-5 h-5" />
                           </button>
