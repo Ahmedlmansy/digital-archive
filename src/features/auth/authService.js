@@ -13,6 +13,7 @@ export const registerUser = async ({ fullName, email, password }) => {
 
   if (error) throw error;
 
+  // بعد الـ signUp، لو مفيش confirm email required، الـ session هيرجع
   return data;
 };
 
@@ -29,15 +30,16 @@ export const loginUser = async ({ email, password }) => {
 
 export const logoutUser = async () => {
   const { error } = await supabase.auth.signOut();
-
   if (error) throw error;
 };
 
 export const getCurrentSession = async () => {
   const {
     data: { session },
+    error,
   } = await supabase.auth.getSession();
 
+  if (error) throw error;
   return session;
 };
 
@@ -46,9 +48,21 @@ export const getProfile = async (userId) => {
     .from("profiles")
     .select("*")
     .eq("id", userId)
+    .maybeSingle(); // ← مهم: مش بيرمي error لو مفيش صف
+
+  if (error) throw error;
+  return data;
+};
+
+// ── جديد: تحديث البروفايل ─────────────────────────────────────
+export const updateProfile = async (userId, updates) => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("id", userId)
+    .select()
     .single();
 
   if (error) throw error;
-
   return data;
 };

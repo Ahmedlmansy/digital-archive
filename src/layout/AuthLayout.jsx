@@ -1,6 +1,39 @@
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 export default function AuthLayout() {
+  const { isAuthenticated, profile, loading } = useSelector(
+    (state) => state.auth,
+  );
+
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#fdf8ff" }}
+      >
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2"
+          style={{ borderColor: "#352481" }}
+        />
+      </div>
+    );
+  }
+
+  // لو مسجل دخول، redirect حسب الدور
+  if (isAuthenticated && profile) {
+    const userRole = profile.role;
+
+    if (userRole === "archivist") {
+      return <Navigate to="/app/dashboard" replace />;
+    }
+    if (userRole === "researcher") {
+      return <Navigate to="/app/documents" replace />;
+    }
+    return <Navigate to="/app/documents" replace />;
+  }
+
+  // ←←← login / register فقط ←←←
   return (
     <div
       dir="rtl"
@@ -10,7 +43,6 @@ export default function AuthLayout() {
         fontFamily: "'IBM Plex Sans', 'Noto Sans Arabic', sans-serif",
       }}
     >
-      {/* Background pattern overlay */}
       <div
         className="absolute inset-0 z-0 opacity-10"
         style={{
@@ -20,8 +52,6 @@ export default function AuthLayout() {
           backgroundSize: "auto",
         }}
       />
-
-      {/* Subtle gradient veil over pattern */}
       <div
         className="absolute inset-0 z-[1]"
         style={{
@@ -29,20 +59,12 @@ export default function AuthLayout() {
             "linear-gradient(160deg, rgba(253,248,255,0.85) 0%, rgba(241,236,245,0.75) 50%, rgba(253,248,255,0.90) 100%)",
         }}
       />
-
-      {/* Decorative top border */}
       <div
         className="absolute top-0 inset-x-0 z-10 h-1"
         style={{ backgroundColor: "#352481" }}
       />
 
-      {/* Main content card */}
       <main className="relative z-10 w-full max-w-md mx-4 sm:mx-auto">
-        {/* Logo / Brand header */}
-        <div className="flex flex-col items-center mb-8 gap-3">
-        </div>
-
-        {/* Auth card */}
         <div
           className="w-full rounded-xl px-8 py-8"
           style={{
@@ -54,8 +76,6 @@ export default function AuthLayout() {
         >
           <Outlet />
         </div>
-
-        {/* Footer note */}
         <p
           className="text-center text-xs mt-6"
           style={{ color: "#797583", fontFamily: "'Noto Sans', sans-serif" }}

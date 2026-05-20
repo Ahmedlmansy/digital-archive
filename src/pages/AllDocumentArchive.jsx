@@ -39,6 +39,7 @@ import {
   clearFilters,
   setSearchQuery,
 } from "@/features/documents/DocumentSlices";
+import { useNavigate } from "react-router-dom";
 
 // ── Icon mapping ─────────────────────────────────────────────
 const typeIcons = {
@@ -60,7 +61,10 @@ const statusColors = {
   draft: "bg-outline",
 };
 
-export default function DocumentsPage() {
+export default function DocumentsPage()
+{
+    const navigate = useNavigate();
+
   const dispatch = useDispatch();
   const {
     documents,
@@ -217,6 +221,7 @@ export default function DocumentsPage() {
             fontWeight: 500,
             lineHeight: "20px",
           }}
+          onClick={() => navigate("/app/douments")}
         >
           <Plus className="w-5 h-5" />
           رفع وثيقة جديدة
@@ -805,6 +810,7 @@ export default function DocumentsPage() {
                           <button
                             className="hover:text-[#352481] transition-colors"
                             title="عرض التفاصيل"
+                            onClick={() => navigate(`/documents/${doc.id}`)}
                           >
                             <Eye className="w-5 h-5" />
                           </button>

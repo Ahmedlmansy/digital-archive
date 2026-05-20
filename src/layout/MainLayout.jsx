@@ -22,7 +22,7 @@ const NAV_BY_ROLE = {
     { label: "لوحة التحكم", icon: LayoutDashboard, href: "/dashboard" },
     { label: "رفع وثيقة", icon: Upload, href: "/upload" },
     { label: "عرض المستندات", icon: FileText, href: "/documents" },
-    { label: "البحث", icon: Search, href: "/search" },
+    { label: "البحث", icon: Search, href: "/advanced-search" },
     { label: "المستخدمون", icon: Users, href: "/users" },
   ],
   researcher: [
