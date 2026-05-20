@@ -12,13 +12,14 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
     return <Navigate to="/login" replace />;
   }
 
-  // ← الـ role check هنا على الـ client side
   if (allowedRoles.length > 0) {
     const userRole = profile.role;
+    // archivist يوصل لكل حاجة
     const hasAccess =
       userRole === "archivist" || allowedRoles.includes(userRole);
 
     if (!hasAccess) {
+      // ← إصلاح: /app/unauthorized مش /app/app/unauthorized
       return <Navigate to="/app/unauthorized" replace />;
     }
   }

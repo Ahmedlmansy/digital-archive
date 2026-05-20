@@ -19,17 +19,17 @@ import { logout } from "@/features/auth/authSlice";
 // ── Nav items per role ────────────────────────────────────────────────────────
 const NAV_BY_ROLE = {
   archivist: [
-    { label: "لوحة التحكم", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "رفع وثيقة", icon: Upload, href: "/upload" },
-    { label: "عرض المستندات", icon: FileText, href: "/documents" },
-    { label: "البحث", icon: Search, href: "/advanced-search" },
-    { label: "المستخدمون", icon: Users, href: "/users" },
+    { label: "لوحة التحكم", icon: LayoutDashboard, href: "/app/dashboard" },
+    { label: "رفع وثيقة", icon: Upload, href: "/app/upload" },
+    { label: "عرض المستندات", icon: FileText, href: "/app/documents" },
+    { label: "البحث", icon: Search, href: "/app/advanced-search" },
+    { label: "المستخدمون", icon: Users, href: "/app/users" },
   ],
   researcher: [
-    { label: "عرض المستندات", icon: FileText, href: "/documents" },
-    { label: "البحث", icon: Search, href: "/search" },
+    { label: "عرض المستندات", icon: FileText, href: "/app/documents" },
+    { label: "البحث", icon: Search, href: "/app/search" },
   ],
-  visitor: [{ label: "عرض المستندات", icon: FileText, href: "/documents" }],
+  visitor: [{ label: "عرض المستندات", icon: FileText, href: "/app/documents" }],
 };
 
 // ── Avatar initials helper ────────────────────────────────────────────────────

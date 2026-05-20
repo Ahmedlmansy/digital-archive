@@ -73,15 +73,16 @@ function AppLayout() {
     );
   }
 
+  // ← إصلاح: redirect لـ /login مش لـ /
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <MainLayout />;
 }
 
 const router = createBrowserRouter([
-  // ─── الصفحة الرئيسية (للزوار والباحثين) ───────────────────────────────────
+  // ─── الصفحة الرئيسية (للزوار) ──────────────────────────────────────────
   {
     path: "/",
     element: (
@@ -93,7 +94,6 @@ const router = createBrowserRouter([
 
   // ─── Auth pages (Login / Register) ──────────────────────────────────────
   {
-    path: "/",
     element: <AuthLayout />,
     children: [
       { path: "login", element: <LoginPage /> },
@@ -101,12 +101,15 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ─── Protected App ───────────────────────────────────────────────────────
+  // ─── Protected App (/app/*) ──────────────────────────────────────────────
   {
-    path: "/",
+    path: "/app",
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/documents" replace /> },
+      // ← redirect افتراضي حسب الدور بيتعمل في AuthLayout/AppLayout
+      { index: true, element: <Navigate to="/app/documents" replace /> },
+
+      // متاح لكل المسجلين
       { path: "documents", element: <DocumentArchive /> },
       { path: "documents/:id", element: <DocumentViewer /> },
       { path: "unauthorized", element: <Unauthorized /> },
@@ -116,7 +119,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute allowedRoles={["researcher", "archivist"]} />,
         children: [
           { path: "users", element: <UsersPage /> },
-          { path: "dashboard", element: <DashboardPage /> },
+          { path: "dashboard-researcher", element: <DashboardPage /> },
         ],
       },
 
@@ -133,10 +136,11 @@ const router = createBrowserRouter([
     ],
   },
 
-  // Redirects
-  { path: "/dashboard", element: <Navigate to="/dashboard" replace /> },
-  { path: "/upload", element: <Navigate to="/upload" replace /> },
-  { path: "/users", element: <Navigate to="/users" replace /> },
+  // ─── Redirects من القديم للجديد ──────────────────────────────────────────
+  { path: "/dashboard", element: <Navigate to="/app/dashboard" replace /> },
+  { path: "/upload", element: <Navigate to="/app/upload" replace /> },
+  { path: "/users", element: <Navigate to="/app/users" replace /> },
+  { path: "/documents", element: <Navigate to="/app/documents" replace /> },
 
   // 404
   { path: "*", element: <NotFound /> },

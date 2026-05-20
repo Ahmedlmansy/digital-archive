@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 export default function AuthLayout() {
@@ -20,20 +20,17 @@ export default function AuthLayout() {
     );
   }
 
-  // لو مسجل دخول، redirect حسب الدور
+  // ← إصلاح: redirect لـ /app/... مش /app/app/...
   if (isAuthenticated && profile) {
     const userRole = profile.role;
 
     if (userRole === "archivist") {
       return <Navigate to="/app/dashboard" replace />;
     }
-    if (userRole === "researcher") {
-      return <Navigate to="/app/documents" replace />;
-    }
+    // researcher أو أي role تاني
     return <Navigate to="/app/documents" replace />;
   }
 
-  // ←←← login / register فقط ←←←
   return (
     <div
       dir="rtl"
