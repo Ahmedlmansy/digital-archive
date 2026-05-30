@@ -2,7 +2,6 @@ import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
-  Outlet,
 } from "react-router-dom";
 import { useSelector } from "react-redux";
 
@@ -15,7 +14,6 @@ import RegisterPage from "@/pages/auth/RigsterPage";
 import VisitorHomePage from "@/pages/VisitorHomePage";
 import DocumentViewer from "@/pages/DocumentViewer";
 import DocumentArchive from "@/pages/AllDocumentArchive";
-import Dashboard from "@/pages/ArchivistPages/Dashboard";
 import UploadDocument from "@/pages/ArchivistPages/UploadPage";
 import UsersPage from "@/pages/ArchivistPages/UsersPage";
 import Unauthorized from "@/pages/Unauthorized";
@@ -24,9 +22,8 @@ import AddUserPage from "@/pages/ArchivistPages/AddUserPage";
 import DashboardPage from "@/pages/ArchivistPages/DashboardPage.jsx";
 import AdvancedSearchPage from "@/pages/ArchivistPages/AdvancedSearchPage";
 
-// ═══════════════════════════════════════════════════════════════
-// GuestRoute — للزوار فقط (VisitorHomePage)
-// ═══════════════════════════════════════════════════════════════
+// GuestRoute (VisitorHomePage)
+
 function GuestRoute({ children }) {
   const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
 
@@ -53,9 +50,8 @@ function GuestRoute({ children }) {
   return children;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// AppLayout — للمستخدمين المسجلين فقط
-// ═══════════════════════════════════════════════════════════════
+// AppLayout —   for user login
+
 function AppLayout() {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
 
@@ -73,7 +69,7 @@ function AppLayout() {
     );
   }
 
-  // ← إصلاح: redirect لـ /login مش لـ /
+  // redirect
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -82,7 +78,7 @@ function AppLayout() {
 }
 
 const router = createBrowserRouter([
-  // ─── الصفحة الرئيسية (للزوار) ──────────────────────────────────────────
+  // (Visitor Home Page) 
   {
     path: "/",
     element: (
@@ -92,7 +88,7 @@ const router = createBrowserRouter([
     ),
   },
 
-  // ─── Auth pages (Login / Register) ──────────────────────────────────────
+  // ─── Auth pages (Login / Register) 
   {
     element: <AuthLayout />,
     children: [
@@ -101,7 +97,7 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ─── Protected App (/app/*) ──────────────────────────────────────────────
+  // ─── Protected App 
   {
     path: "/app",
     element: <AppLayout />,
