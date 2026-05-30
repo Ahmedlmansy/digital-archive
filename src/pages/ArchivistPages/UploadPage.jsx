@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Save, Info, CheckCircle, AlertCircle } from "lucide-react";
 
-import { FileDropZone } from "@/components/upload/FileDropZone";
-import { AiAnalysisCard } from "@/components/upload/AiAnalysisCard";
-import { MetadataForm } from "@/components/upload/MetadataForm";
+import { FileDropZone } from "@/components/UploadDocument/FileDropZone";
+import { AiAnalysisCard } from "@/components/UploadDocument/AiAnalysisCard";
+import { MetadataForm } from "@/components/UploadDocument/MetadataForm";
+
+import UploadHeader from "@/components/UploadDocument/UploadHeader";
+import UploadFeedbackBanner from "@/components/UploadDocument/UploadFeedbackBanner";
+import StickyActionBar from "@/components/UploadDocument/StickyActionBar";
 
 import {
   extractText,
@@ -37,7 +40,7 @@ export default function UploadDocument() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ── Redux state ─────────────────────────────────────────────────────────────
+  // ── Redux state ──────────────────────────────────────────────────────────────
   const {
     ocrText,
     fileType,
@@ -50,7 +53,7 @@ export default function UploadDocument() {
     uploadError,
   } = useSelector((state) => state.documents);
 
-  // ── Local state ─────────────────────────────────────────────────────────────
+  // ── Local state ──────────────────────────────────────────────────────────────
   const [file, setFile] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [aiTags, setAiTags] = useState([]);
@@ -83,13 +86,13 @@ export default function UploadDocument() {
 
   // ── Redirect after successful upload ─────────────────────────────────────────
   useEffect(() => {
-    if (uploadSuccess) {
-      setTimeout(() => {
-        dispatch(resetDocumentState());
-        navigate("/dashboard");
-      }, 1800);
-    }
-  }, [uploadSuccess]);
+    if (!uploadSuccess) return;
+    const timer = setTimeout(() => {
+      dispatch(resetDocumentState());
+      navigate("/dashboard");
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, [uploadSuccess, dispatch, navigate]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleFieldChange = (field, value) =>
@@ -117,7 +120,7 @@ export default function UploadDocument() {
     await dispatch(analyzeWithAi(ocrResult.payload.text));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!file) return;
     dispatch(
@@ -133,62 +136,12 @@ export default function UploadDocument() {
 
   return (
     <div className="max-w-[1440px] mx-auto">
-      {/* Header */}
-      <header className="mb-6">
-        <h1
-          className="font-semibold"
-          style={{
-            color: "#352481",
-            fontFamily: "'IBM Plex Sans', sans-serif",
-            fontSize: "32px",
-            lineHeight: "40px",
-          }}
-        >
-          إضافة وثيقة جديدة
-        </h1>
-        <p
-          className="mt-1"
-          style={{
-            color: "#484551",
-            fontFamily: "'Noto Sans', sans-serif",
-            fontSize: "16px",
-            lineHeight: "24px",
-          }}
-        >
-          يرجى رفع الملف وتعبئة البيانات الوصفية (Dublin Core) لإضافته إلى
-          الأرشيف.
-        </p>
-      </header>
+      <UploadHeader />
 
-      {/* Feedback banners */}
-      {uploadSuccess && (
-        <div
-          className="mb-4 px-4 py-3 rounded-lg flex items-center gap-2"
-          style={{
-            backgroundColor: "#f0fdf4",
-            border: "1px solid #bbf7d0",
-            color: "#166534",
-            fontFamily: "'Noto Sans', sans-serif",
-          }}
-        >
-          <CheckCircle className="w-4 h-4 flex-shrink-0" />
-          تم رفع الوثيقة بنجاح! جارٍ التوجيه...
-        </div>
-      )}
-      {uploadError && (
-        <div
-          className="mb-4 px-4 py-3 rounded-lg flex items-center gap-2"
-          style={{
-            backgroundColor: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#991b1b",
-            fontFamily: "'Noto Sans', sans-serif",
-          }}
-        >
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          {uploadError}
-        </div>
-      )}
+      <UploadFeedbackBanner
+        uploadSuccess={uploadSuccess}
+        uploadError={uploadError}
+      />
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -297,79 +250,14 @@ export default function UploadDocument() {
           </div>
         </div>
 
-        {/* Sticky action bar */}
-        <div
-          className="mt-6 rounded-xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky bottom-6 z-30 border"
-          style={{
-            backgroundColor: "#ffffff",
-            borderColor: "rgba(201,196,211,0.35)",
-            boxShadow: "0 4px 16px rgba(28,27,33,0.08)",
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <Info
-              className="w-4 h-4 flex-shrink-0"
-              style={{ color: "#797583" }}
-            />
-            <span
-              className="text-sm"
-              style={{
-                color: "#484551",
-                fontFamily: "'Noto Sans', sans-serif",
-              }}
-            >
-              {aiDone
-                ? "راجع البيانات المستخلصة وعدّل ما يلزم قبل الحفظ."
-                : "يمكنك تعبئة البيانات يدوياً أو استخدام التصنيف التلقائي أولاً."}
-            </span>
-          </div>
-
-          <div className="flex gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={() => navigate(-1)}
-              className="flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-              style={{
-                color: "#1c1b21",
-                fontFamily: "'IBM Plex Sans', sans-serif",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#f1ecf5")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              إلغاء
-            </button>
-
-            <button
-              type="submit"
-              disabled={!file || !form.title || isBusy}
-              className="flex-1 sm:flex-none px-8 py-2 rounded-lg text-sm font-medium shadow-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: "#352481",
-                color: "#ffffff",
-                fontFamily: "'IBM Plex Sans', sans-serif",
-              }}
-              onMouseEnter={(e) =>
-                !isBusy && (e.currentTarget.style.backgroundColor = "#4c3d99")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#352481")
-              }
-            >
-              {uploading ? (
-                "جارٍ الرفع..."
-              ) : (
-                <>
-                  <Save className="w-4 h-4" /> رفع الوثيقة
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+        <StickyActionBar
+          aiDone={aiDone}
+          isBusy={isBusy}
+          uploading={uploading}
+          file={file}
+          formTitle={form.title}
+          onCancel={() => navigate(-1)}
+        />
       </form>
     </div>
   );
