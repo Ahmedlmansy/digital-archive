@@ -102,10 +102,9 @@ const router = createBrowserRouter([
     path: "/app",
     element: <AppLayout />,
     children: [
-      // ← redirect افتراضي حسب الدور بيتعمل في AuthLayout/AppLayout
       { index: true, element: <Navigate to="/app/documents" replace /> },
 
-      // متاح لكل المسجلين
+      //  Common for all authenticated users 
       { path: "documents", element: <DocumentArchive /> },
       { path: "documents/:id", element: <DocumentViewer /> },
       { path: "unauthorized", element: <Unauthorized /> },
@@ -132,7 +131,7 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ─── Redirects من القديم للجديد ──────────────────────────────────────────
+  // ─── Redirects
   { path: "/dashboard", element: <Navigate to="/app/dashboard" replace /> },
   { path: "/upload", element: <Navigate to="/app/upload" replace /> },
   { path: "/users", element: <Navigate to="/app/users" replace /> },
