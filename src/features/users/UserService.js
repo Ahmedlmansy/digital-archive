@@ -75,9 +75,8 @@ export const bulkDeleteUsers = async (userIds) => {
   return data; 
 };
 
-// ═══════════════════════════════════════════════════════════════
-// CATEGORIES —  (public read)
-// ═══════════════════════════════════════════════════════════════
+
+// CATEGORIES 
 
 export const fetchCategories = async () => {
   const { data, error } = await supabase

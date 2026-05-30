@@ -32,9 +32,8 @@ const initialState = {
   deleteError: null,
 };
 
-// ═══════════════════════════════════════════════════════════════
 // THUNKS
-// ═══════════════════════════════════════════════════════════════
+
 
 // 1. Load users
 export const loadUsers = createAsyncThunk(
@@ -166,9 +165,8 @@ export const removeBulkUsers = createAsyncThunk(
   },
 );
 
-// ═══════════════════════════════════════════════════════════════
+
 // SLICE
-// ═══════════════════════════════════════════════════════════════
 const userSlice = createSlice({
   name: "users",
   initialState,
@@ -209,7 +207,7 @@ const userSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    // ── loadUsers ───────────────────────────────────────────────────────────
+    //  loadUsers 
     builder
       .addCase(loadUsers.pending, (state) => {
         state.listStatus = "loading";
@@ -226,7 +224,7 @@ const userSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── changePage ──────────────────────────────────────────────────────────
+    // ── changePage 
     builder
       .addCase(changePage.pending, (state) => {
         state.listStatus = "loading";
@@ -243,7 +241,7 @@ const userSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── searchUsers ─────────────────────────────────────────────────────────
+    // ── searchUsers 
     builder
       .addCase(searchUsers.pending, (state) => {
         state.listStatus = "loading";
@@ -261,7 +259,7 @@ const userSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── applyFilter ─────────────────────────────────────────────────────────
+    // ── applyFilter 
     builder
       .addCase(applyFilter.pending, (state) => {
         state.listStatus = "loading";
@@ -279,7 +277,7 @@ const userSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── setUserRole ─────────────────────────────────────────────────────────
+    // ── setUserRole 
     builder.addCase(setUserRole.fulfilled, (state, action) => {
       const idx = state.users.findIndex((u) => u.id === action.payload.id);
       if (idx !== -1) {
@@ -287,7 +285,7 @@ const userSlice = createSlice({
       }
     });
 
-    // ── setUserStatus ───────────────────────────────────────────────────────
+    // ── setUserStatus 
     builder.addCase(setUserStatus.fulfilled, (state, action) => {
       const idx = state.users.findIndex((u) => u.id === action.payload.id);
       if (idx !== -1) {
@@ -295,7 +293,7 @@ const userSlice = createSlice({
       }
     });
 
-    // ── removeUser ──────────────────────────────────────────────────────────
+    // ── removeUser 
     builder
       .addCase(removeUser.pending, (state) => {
         state.deleteStatus = "loading";
@@ -313,7 +311,7 @@ const userSlice = createSlice({
         state.deleteError = action.payload;
       });
 
-    // ── removeBulkUsers ─────────────────────────────────────────────────────
+    // ── removeBulkUsers 
     builder
       .addCase(removeBulkUsers.pending, (state) => {
         state.deleteStatus = "loading";

@@ -8,9 +8,9 @@ import {
   fetchCategories,
 } from "./DocumentService";
 
-// ── Initial State ─────────────────────────────────────────────
+// ── Initial State 
 const initialState = {
-  // ── Documents List (للعرض والبحث) ───────────────────────────
+  // ── Documents List 
   documents: [],
   listStatus: "idle", // idle | loading | succeeded | failed
   listError: null,
@@ -19,7 +19,7 @@ const initialState = {
   totalPages: 1,
   itemsPerPage: 10,
 
-  // ── Filters & Search ────────────────────────────────────────
+  //  Filters & Search 
   filters: {
     query: "",
     status: null, // 'active' | 'archived' | 'draft'
@@ -30,36 +30,35 @@ const initialState = {
     sortOrder: "desc",
   },
 
-  // ── Categories ──────────────────────────────────────────────
+  // ── Categories 
   categories: [],
   categoriesStatus: "idle",
 
-  // ── OCR ────────────────────────────────────────────────────
+  // ── OCR 
   ocrText: "",
   fileType: null,
   ocrStatus: "idle",
   ocrError: null,
 
-  // ── AI Analysis ────────────────────────────────────────────
+  // ── AI Analysis 
   aiResult: null,
   aiStatus: "idle",
   aiError: null,
 
-  // ── Upload ─────────────────────────────────────────────────
+  // ── Upload 
   uploadStatus: "idle",
   uploadError: null,
   uploadedDoc: null,
 
-  // ── Delete ─────────────────────────────────────────────────
+  // ── Delete 
   deleteStatus: "idle",
   deleteError: null,
 };
 
-// ═══════════════════════════════════════════════════════════════
 // THUNKS
-// ═══════════════════════════════════════════════════════════════
 
-// ١. جلب الوثائق (مع البحث والفلترة)
+
+// get documents with filters, search, pagination
 export const loadDocuments = createAsyncThunk(
   "documents/loadDocuments",
   async (_, thunkAPI) => {
@@ -83,7 +82,7 @@ export const loadDocuments = createAsyncThunk(
   },
 );
 
-// ٢. تغيير الصفحة وإعادة الجلب
+// Change Page
 export const changePage = createAsyncThunk(
   "documents/changePage",
   async (page, thunkAPI) => {
@@ -107,7 +106,7 @@ export const changePage = createAsyncThunk(
   },
 );
 
-// ٣. البحث
+// Search Documents
 export const searchDocuments = createAsyncThunk(
   "documents/searchDocuments",
   async (query, thunkAPI) => {
@@ -119,7 +118,7 @@ export const searchDocuments = createAsyncThunk(
         categoryId: state.filters.categoryId,
         dateFrom: state.filters.dateFrom,
         dateTo: state.filters.dateTo,
-        page: 1, // نرجع للصفحة الأولى عند البحث
+        page: 1, 
         limit: state.itemsPerPage,
         sortBy: state.filters.sortBy,
         sortOrder: state.filters.sortOrder,
@@ -131,7 +130,7 @@ export const searchDocuments = createAsyncThunk(
   },
 );
 
-// ٤. تطبيق فلتر
+// Apply Filter
 export const applyFilter = createAsyncThunk(
   "documents/applyFilter",
   async (filterUpdate, thunkAPI) => {
@@ -156,7 +155,7 @@ export const applyFilter = createAsyncThunk(
   },
 );
 
-// ٥. جلب التصنيفات
+// Load Categories
 export const loadCategories = createAsyncThunk(
   "documents/loadCategories",
   async (_, thunkAPI) => {
@@ -168,7 +167,7 @@ export const loadCategories = createAsyncThunk(
   },
 );
 
-// ٦. استخراج النص (OCR)
+// Extract Text (OCR)
 export const extractText = createAsyncThunk(
   "documents/extractText",
   async (file, thunkAPI) => {
@@ -180,7 +179,7 @@ export const extractText = createAsyncThunk(
   },
 );
 
-// ٧. تحليل AI
+//  Analyze With AI
 export const analyzeWithAi = createAsyncThunk(
   "documents/analyzeWithAi",
   async (ocrText, thunkAPI) => {
@@ -192,7 +191,7 @@ export const analyzeWithAi = createAsyncThunk(
   },
 );
 
-// ٨. رفع وثيقة
+//  Upload Document
 export const uploadDoc = createAsyncThunk(
   "documents/uploadDoc",
   async ({ file, fileType, form, aiSummary, aiTags }, thunkAPI) => {
@@ -213,8 +212,8 @@ export const uploadDoc = createAsyncThunk(
     }
   },
 );
-
-// ٩. حذف وثيقة
+ 
+// Remove Document
 export const removeDocument = createAsyncThunk(
   "documents/removeDocument",
   async ({ docId, filePath }, thunkAPI) => {
@@ -227,15 +226,14 @@ export const removeDocument = createAsyncThunk(
   },
 );
 
-// ═══════════════════════════════════════════════════════════════
 // SLICE
-// ═══════════════════════════════════════════════════════════════
+
 const documentSlice = createSlice({
   name: "documents",
   initialState,
 
   reducers: {
-    // ── Reset ────────────────────────────────────────────────
+    // ── Reset 
     resetDocumentState: () => initialState,
 
     resetUploadStatus: (state) => {
@@ -257,7 +255,7 @@ const documentSlice = createSlice({
       state.aiResult = null;
     },
 
-    // ── Filters (local updates before server call) ───────────
+    // ── Filters (local updates before server call) 
     setSearchQuery: (state, action) => {
       state.filters.query = action.payload;
     },
@@ -275,7 +273,7 @@ const documentSlice = createSlice({
       state.currentPage = 1;
     },
 
-    // ── Pagination (local) ───────────────────────────────────
+    // ── Pagination (local) 
     setItemsPerPage: (state, action) => {
       state.itemsPerPage = action.payload;
       state.currentPage = 1;
@@ -283,7 +281,7 @@ const documentSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    // ── loadDocuments ─────────────────────────────────────────
+    // ── loadDocuments 
     builder
       .addCase(loadDocuments.pending, (state) => {
         state.listStatus = "loading";
@@ -300,7 +298,7 @@ const documentSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── changePage ────────────────────────────────────────────
+    // ── changePage 
     builder
       .addCase(changePage.pending, (state) => {
         state.listStatus = "loading";
@@ -317,7 +315,7 @@ const documentSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── searchDocuments ───────────────────────────────────────
+    // ── searchDocuments 
     builder
       .addCase(searchDocuments.pending, (state) => {
         state.listStatus = "loading";
@@ -336,7 +334,7 @@ const documentSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── applyFilter ───────────────────────────────────────────
+    // ── applyFilter 
     builder
       .addCase(applyFilter.pending, (state) => {
         state.listStatus = "loading";
@@ -354,7 +352,7 @@ const documentSlice = createSlice({
         state.listError = action.payload;
       });
 
-    // ── loadCategories ────────────────────────────────────────
+    // ── loadCategories 
     builder
       .addCase(loadCategories.pending, (state) => {
         state.categoriesStatus = "loading";
@@ -367,7 +365,7 @@ const documentSlice = createSlice({
         state.categoriesStatus = "failed";
       });
 
-    // ── extractText ─────────────────────────────────────────
+    // ── extractText 
     builder
       .addCase(extractText.pending, (state) => {
         state.ocrStatus = "loading";
@@ -385,7 +383,7 @@ const documentSlice = createSlice({
         state.ocrError = action.payload;
       });
 
-    // ── analyzeWithAi ────────────────────────────────────────
+    // ── analyzeWithAi 
     builder
       .addCase(analyzeWithAi.pending, (state) => {
         state.aiStatus = "loading";
@@ -401,7 +399,7 @@ const documentSlice = createSlice({
         state.aiError = action.payload;
       });
 
-    // ── uploadDoc ────────────────────────────────────────────
+    // ── uploadDoc 
     builder
       .addCase(uploadDoc.pending, (state) => {
         state.uploadStatus = "loading";
@@ -417,7 +415,7 @@ const documentSlice = createSlice({
         state.uploadError = action.payload;
       });
 
-    // ── removeDocument ───────────────────────────────────────
+    // ── removeDocument 
     builder
       .addCase(removeDocument.pending, (state) => {
         state.deleteStatus = "loading";

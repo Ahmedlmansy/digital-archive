@@ -1,12 +1,10 @@
 import { supabase } from "@/supabase/client";
 
-// ═══════════════════════════════════════════════════════════════
-// OCR — استخراج النص من الملفات
-// ═══════════════════════════════════════════════════════════════
+// OCR —    
+
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 
-// تعديل مهم لـ Vite: استخدام worker من node_modules
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
@@ -51,9 +49,9 @@ export const extractTextFromFile = async (file) => {
   throw new Error("صيغة الملف غير مدعومة — يرجى رفع PDF أو DOCX");
 };
 
-// ═══════════════════════════════════════════════════════════════
+
 // AI Analysis — Groq via Supabase Edge Function
-// ═══════════════════════════════════════════════════════════════
+
 export const analyzeDocumentWithAi = async (ocrText) => {
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-analyze`,
@@ -75,23 +73,8 @@ export const analyzeDocumentWithAi = async (ocrText) => {
   return await res.json();
 };
 
-// ═══════════════════════════════════════════════════════════════
-// FETCH DOCUMENTS — جلب الوثائق مع البحث والفلترة والتصفح
-// ═══════════════════════════════════════════════════════════════
+// FETCH DOCUMENTS 
 
-/**
- * جلب الوثائق مع دعم البحث والفلترة والـ Pagination
- * @param {Object} params
- * @param {string} params.query — نص البحث (title, description, subject)
- * @param {string} params.status — active | archived | draft
- * @param {number} params.categoryId — تصنيف معين
- * @param {string} params.dateFrom — تاريخ بداية (YYYY-MM-DD)
- * @param {string} params.dateTo — تاريخ نهاية
- * @param {number} params.page — رقم الصفحة (يبدأ من 1)
- * @param {number} params.limit — عدد العناصر بالصفحة (default 10)
- * @param {string} params.sortBy — ترتيب حسب (created_at | dc_date | dc_title)
- * @param {string} params.sortOrder — asc | desc
- */
 export const fetchDocuments = async ({
   query = "",
   status = null,
@@ -109,14 +92,12 @@ export const fetchDocuments = async ({
     { count: "exact" },
   );
 
-  // ── البحث بالنص ─────────────────────────────────────────────
+  // Search query
   if (query && query.trim()) {
-    // استخدام الـ Full Text Search اللي عامله في الـ Schema
     const { data, error } = await supabase.rpc("search_documents", {
       query: query.trim(),
     });
     if (error) throw error;
-    // لأن RPC بيرجع array، هنحتاج نعمل pagination يدوي
     const total = data?.length || 0;
     const start = (page - 1) * limit;
     const end = start + limit;
@@ -128,7 +109,7 @@ export const fetchDocuments = async ({
     };
   }
 
-  // ── الفلاتر ──────────────────────────────────────────────────
+  // fillter 
   if (status) {
     dbQuery = dbQuery.eq("status", status);
   }
@@ -142,7 +123,6 @@ export const fetchDocuments = async ({
     dbQuery = dbQuery.lte("dc_date", dateTo);
   }
 
-  // ── الترتيب والتصفح ──────────────────────────────────────────
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
@@ -162,9 +142,8 @@ export const fetchDocuments = async ({
   };
 };
 
-// ═══════════════════════════════════════════════════════════════
-// UPLOAD DOCUMENT — رفع وثيقة جديدة
-// ═══════════════════════════════════════════════════════════════
+// UPLOAD DOCUMENT   
+
 export const uploadDocument = async ({
   file,
   fileType,
@@ -173,7 +152,7 @@ export const uploadDocument = async ({
   aiTags,
   userId,
 }) => {
-  // 1. Resolve category_id من الاسم
+  // 1. Resolve category_id 
   let categoryId = null;
   if (form.classification) {
     const { data } = await supabase
@@ -228,23 +207,21 @@ export const uploadDocument = async ({
   return data;
 };
 
-// ═══════════════════════════════════════════════════════════════
-// DELETE DOCUMENT — حذف وثيقة
-// ═══════════════════════════════════════════════════════════════
+// DELETE DOCUMENT 
+
 export const deleteDocument = async (docId, filePath) => {
-  // حذف من Storage الأول
+  // delete from Storage first (if filePath exists)
   if (filePath) {
     await supabase.storage.from("documents").remove([filePath]);
   }
-  // حذف من DB
+  // delete from DB
   const { error } = await supabase.from("documents").delete().eq("id", docId);
   if (error) throw error;
   return true;
 };
 
-// ═══════════════════════════════════════════════════════════════
-// FETCH CATEGORIES — جلب التصنيفات
-// ═══════════════════════════════════════════════════════════════
+// FETCH CATEGORIES 
+
 export const fetchCategories = async () => {
   const { data, error } = await supabase
     .from("categories")

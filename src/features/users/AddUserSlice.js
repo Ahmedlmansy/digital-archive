@@ -8,7 +8,7 @@ const initialState = {
   successMessage: null,
 };
 
-// ── Thunk ─────────────────────────────────────────────────────────────────────
+// ── Thunk 
 export const addUser = createAsyncThunk(
   "addUser/addUser",
   async (userData, thunkAPI) => {
@@ -20,7 +20,7 @@ export const addUser = createAsyncThunk(
   },
 );
 
-// ── Slice ─────────────────────────────────────────────────────────────────────
+// ── Slice 
 const addUserSlice = createSlice({
   name: "addUser",
   initialState,

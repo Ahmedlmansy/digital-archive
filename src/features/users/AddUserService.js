@@ -1,9 +1,6 @@
 import { supabase } from "@/supabase/client";
 
-/**
- * تسجيل مستخدم جديد في Supabase Auth
- * الـ trigger هينشئ الـ profile تلقائياً
- */
+
 export const registerNewUser = async ({
   email,
   password,
@@ -12,7 +9,6 @@ export const registerNewUser = async ({
   phone,
   status = "active",
 }) => {
-  // 1. إنشاء حساب في Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -26,8 +22,7 @@ export const registerNewUser = async ({
 
   if (authError) throw authError;
 
-  // 2. التريجر هينشئ الـ profile تلقائياً
-  // بس نتأكد إن الـ status و phone متضافين
+
   if (authData?.user?.id) {
     const updates = {};
     if (status) updates.status = status;

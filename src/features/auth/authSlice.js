@@ -16,9 +16,7 @@ const initialState = {
   error: null,
 };
 
-// ═══════════════════════════════════════════════════════════════
 // THUNKS
-// ═══════════════════════════════════════════════════════════════
 
 export const register = createAsyncThunk(
   "auth/register",
@@ -73,8 +71,8 @@ export const logout = createAsyncThunk("auth/logout", async (_, thunkAPI) => {
   }
 });
 
-// ← الحل الرئيسي: checkAuth يخلص حتى لو getProfile فشل
-// في checkAuth thunk — تأكد إن الفنكشن دي موجودة
+// Check Auth
+
 export const checkAuth = createAsyncThunk(
   "auth/checkAuth",
   async (_, thunkAPI) => {
@@ -102,9 +100,7 @@ export const checkAuth = createAsyncThunk(
     }
   }
 );
-// ═══════════════════════════════════════════════════════════════
 // SLICE
-// ═══════════════════════════════════════════════════════════════
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -131,7 +127,7 @@ const authSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    // ── REGISTER ────────────────────────────────────────────────
+    // REGISTER 
     builder
       .addCase(register.pending, (state) => {
         state.loading = true;
@@ -152,7 +148,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       });
 
-    // ── LOGIN ───────────────────────────────────────────────────
+    //  LOGIN 
     builder
       .addCase(login.pending, (state) => {
         state.loading = true;
@@ -172,21 +168,20 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       });
 
-    // ← الحل: checkAuth لازم يخلص في كل الحالات
     builder
       .addCase(checkAuth.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
-        state.loading = false; // ← خلاص مش loading
+        state.loading = false;  
         state.user = action.payload.user;
         state.session = action.payload.session;
         state.profile = action.payload.profile;
         state.isAuthenticated = !!action.payload.user;
       })
       .addCase(checkAuth.rejected, (state, action) => {
-        state.loading = false; // ← خلاص مش loading
+        state.loading = false; 
         state.error = action.payload;
         state.user = null;
         state.session = null;
@@ -194,7 +189,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       });
 
-    // ── LOGOUT ──────────────────────────────────────────────────
+    //  LOGOUT 
     builder
       .addCase(logout.pending, (state) => {
         state.loading = true;

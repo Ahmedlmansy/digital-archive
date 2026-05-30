@@ -13,7 +13,7 @@ export const registerUser = async ({ fullName, email, password }) => {
 
   if (error) throw error;
 
-  // بعد الـ signUp، لو مفيش confirm email required، الـ session هيرجع
+  // 
   return data;
 };
 
@@ -48,14 +48,14 @@ export const getProfile = async (userId) => {
     .from("profiles")
     .select("*")
     .eq("id", userId)
-    .maybeSingle(); // ← مهم: مش بيرمي error لو مفيش صف
-
+    .maybeSingle(); // 
   if (error) throw error;
   return data;
 };
 
-// ── جديد: تحديث البروفايل ─────────────────────────────────────
-export const updateProfile = async (userId, updates) => {
+// 
+export const updateProfile = async (userId, updates) =>
+{
   const { data, error } = await supabase
     .from("profiles")
     .update(updates)

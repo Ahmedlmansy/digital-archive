@@ -19,16 +19,13 @@ export const documentViewerApi = {
     return data;
   },
 
-
   async getSignedUrl(filePath) {
     const { data, error } = await supabase.storage
-      .from("documents") 
-      .createSignedUrl(filePath, 3600); // صالح لمدة ساعة
-
+      .from("documents")
+      .createSignedUrl(filePath, 3600);
     if (error) throw error;
     return data.signedUrl;
   },
-
 
   async incrementViewCount(id, currentCount) {
     const { error } = await supabase
@@ -39,7 +36,7 @@ export const documentViewerApi = {
     if (error) throw error;
   },
 
-  // تسجيل النشاط في سجل العمليات
+  // log Activity
   async logActivity(userId, docId, action) {
     await supabase.from("activity_log").insert({
       user_id: userId,
