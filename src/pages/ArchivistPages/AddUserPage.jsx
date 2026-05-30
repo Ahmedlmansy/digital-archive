@@ -1,102 +1,85 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Lock,
-  CheckCircle,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { addUser, resetAddUserState } from "@/features/users/AddUserSlice";
 
-const roleOptions = [
-  { value: "archivist", label: "أرشيفي" },
-  { value: "researcher", label: "باحث" },
-  { value: "visitor", label: "زائر" },
-];
+import PersonalInfoSection from "@/components/AddUserPage/PersonalInfoSection";
+import RoleSection from "@/components/AddUserPage/RoleSection";
+import SecuritySection from "@/components/AddUserPage/SecuritySection";
+
+// ── Empty form ────────────────────────────────────────────────
+const EMPTY_FORM = {
+  fullName: "",
+  email: "",
+  phone: "",
+  role: "",
+  status: "active",
+  password: "",
+  confirmPassword: "",
+};
 
 export default function AddUserPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const { status, error, successMessage } = useSelector(
     (state) => state.addUser,
   );
 
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    role: "",
-    status: "active",
-    password: "",
-    confirmPassword: "",
-  });
-
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
-  // Reset state on mount/unmount
+  // ── Reset on mount / unmount ──────────────────────────────────
   useEffect(() => {
     dispatch(resetAddUserState());
     return () => dispatch(resetAddUserState());
   }, [dispatch]);
 
-  // Redirect on success
+  // ── Redirect on success ───────────────────────────────────────
   useEffect(() => {
-    if (status === "succeeded") {
-      const timer = setTimeout(() => {
-        navigate("/app/users");
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
+    if (status !== "succeeded") return;
+    const timer = setTimeout(() => navigate("/app/users"), 1500);
+    return () => clearTimeout(timer);
   }, [status, navigate]);
 
+  // ── Handlers ──────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? (checked ? "active" : "inactive") : value,
     }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "الاسم الكامل مطلوب";
-    }
+    if (!formData.fullName.trim()) newErrors.fullName = "الاسم الكامل مطلوب";
 
-    if (!formData.email.trim()) {
-      newErrors.email = "البريد الإلكتروني مطلوب";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.email.trim()) newErrors.email = "البريد الإلكتروني مطلوب";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       newErrors.email = "بريد إلكتروني غير صالح";
-    }
 
-    if (!formData.role) {
-      newErrors.role = "الدور الوظيفي مطلوب";
-    }
+    if (!formData.role) newErrors.role = "الدور الوظيفي مطلوب";
 
-    if (!formData.password) {
-      newErrors.password = "كلمة المرور مطلوبة";
-    } else if (formData.password.length < 6) {
+    if (!formData.password) newErrors.password = "كلمة المرور مطلوبة";
+    else if (formData.password.length < 6)
       newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
-    }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "كلمتا المرور غير متطابقتين";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-
     dispatch(
       addUser({
         fullName: formData.fullName,
@@ -149,7 +132,7 @@ export default function AddUserPage() {
           </button>
         </div>
 
-        {/* Success Message */}
+        {/* Success banner */}
         {status === "succeeded" && (
           <div
             className="mb-6 p-4 rounded-lg border flex items-center gap-3"
@@ -160,7 +143,7 @@ export default function AddUserPage() {
           </div>
         )}
 
-        {/* Form Card */}
+        {/* Form card */}
         <div
           className="rounded-xl overflow-hidden border shadow-sm"
           style={{
@@ -173,316 +156,29 @@ export default function AddUserPage() {
             onSubmit={handleSubmit}
             className="p-6 md:p-8 flex flex-col gap-8"
           >
-            {/* Personal Information */}
-            <section>
-              <h3
-                className="mb-4 flex items-center gap-2 font-semibold"
-                style={{
-                  fontFamily: "ibmPlexSans, sans-serif",
-                  fontSize: "24px",
-                  lineHeight: "32px",
-                  color: "#1c1b21",
-                }}
-              >
-                {/* <Person className="w-6 h-6" style={{ color: "#352481" }} /> */}
-                المعلومات الشخصية
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-1">
-                  <label
-                    className="font-medium"
-                    style={{
-                      fontFamily: "ibmPlexSans, sans-serif",
-                      fontSize: "14px",
-                      color: "#484551",
-                    }}
-                  >
-                    الاسم الكامل *
-                  </label>
-                  <Input
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    placeholder="أدخل الاسم الكامل"
-                    className="px-4 py-2 rounded-lg border text-right h-auto"
-                    style={{
-                      backgroundColor: "#fdf8ff",
-                      borderColor: errors.fullName ? "#ba1a1a" : "#c9c4d3",
-                      fontFamily: "notoSans, sans-serif",
-                      fontSize: "16px",
-                    }}
-                  />
-                  {errors.fullName && (
-                    <span className="text-sm text-error">
-                      {errors.fullName}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label
-                    className="font-medium"
-                    style={{
-                      fontFamily: "ibmPlexSans, sans-serif",
-                      fontSize: "14px",
-                      color: "#484551",
-                    }}
-                  >
-                    البريد الإلكتروني *
-                  </label>
-                  <Input
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="user@example.com"
-                    type="email"
-                    dir="ltr"
-                    className="px-4 py-2 rounded-lg border text-left h-auto"
-                    style={{
-                      backgroundColor: "#fdf8ff",
-                      borderColor: errors.email ? "#ba1a1a" : "#c9c4d3",
-                      fontFamily: "notoSans, sans-serif",
-                      fontSize: "16px",
-                    }}
-                  />
-                  {errors.email && (
-                    <span className="text-sm text-error">{errors.email}</span>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label
-                    className="font-medium"
-                    style={{
-                      fontFamily: "ibmPlexSans, sans-serif",
-                      fontSize: "14px",
-                      color: "#484551",
-                    }}
-                  >
-                    رقم الهاتف
-                  </label>
-                  <Input
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+966 50 000 0000"
-                    type="tel"
-                    dir="ltr"
-                    className="px-4 py-2 rounded-lg border text-left h-auto"
-                    style={{
-                      backgroundColor: "#fdf8ff",
-                      borderColor: "#c9c4d3",
-                      fontFamily: "notoSans, sans-serif",
-                      fontSize: "16px",
-                    }}
-                  />
-                </div>
-              </div>
-            </section>
+            <PersonalInfoSection
+              formData={formData}
+              errors={errors}
+              onChange={handleChange}
+            />
 
             <hr style={{ borderColor: "#c9c4d3" }} />
 
-            {/* Role & Permissions */}
-            <section>
-              <h3
-                className="mb-4 flex items-center gap-2 font-semibold"
-                style={{
-                  fontFamily: "ibmPlexSans, sans-serif",
-                  fontSize: "24px",
-                  lineHeight: "32px",
-                  color: "#1c1b21",
-                }}
-              >
-                {/* <ShieldPerson
-                  className="w-6 h-6"
-                  style={{ color: "#352481" }}
-                /> */}
-                الصلاحيات والدور
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-1">
-                  <label
-                    className="font-medium"
-                    style={{
-                      fontFamily: "ibmPlexSans, sans-serif",
-                      fontSize: "14px",
-                      color: "#484551",
-                    }}
-                  >
-                    الدور الوظيفي *
-                  </label>
-                  <div className="relative">
-                    <select
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-lg border appearance-none text-right"
-                      style={{
-                        backgroundColor: "#fdf8ff",
-                        borderColor: errors.role ? "#ba1a1a" : "#c9c4d3",
-                        fontFamily: "notoSans, sans-serif",
-                        fontSize: "16px",
-                        color: formData.role ? "#1c1b21" : "#797583",
-                      }}
-                    >
-                      <option value="" disabled>
-                        اختر الدور المناسب...
-                      </option>
-                      {roleOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
-                      ▼
-                    </span>
-                  </div>
-                  {errors.role && (
-                    <span className="text-sm text-error">{errors.role}</span>
-                  )}
-                </div>
-
-                <div
-                  className="flex items-center justify-between p-4 rounded-lg border"
-                  style={{ backgroundColor: "#f7f2fb", borderColor: "#c9c4d3" }}
-                >
-                  <div className="flex flex-col">
-                    <span
-                      className="font-medium"
-                      style={{
-                        fontFamily: "ibmPlexSans, sans-serif",
-                        fontSize: "14px",
-                        color: "#1c1b21",
-                      }}
-                    >
-                      حالة الحساب
-                    </span>
-                    <span
-                      className="text-sm"
-                      style={{
-                        fontFamily: "notoSans, sans-serif",
-                        color: "#484551",
-                      }}
-                    >
-                      السماح للمستخدم بتسجيل الدخول للنظام
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="status"
-                      checked={formData.status === "active"}
-                      onChange={handleChange}
-                      className="sr-only peer"
-                    />
-                    <div
-                      className="w-11 h-6 rounded-full peer peer-focus:outline-none transition-all"
-                      style={{
-                        backgroundColor:
-                          formData.status === "active" ? "#086b53" : "#c9c4d3",
-                      }}
-                    >
-                      <div
-                        className="absolute top-[2px] w-5 h-5 bg-white rounded-full transition-all"
-                        style={{
-                          right: formData.status === "active" ? "2px" : "24px",
-                        }}
-                      />
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </section>
+            <RoleSection
+              formData={formData}
+              errors={errors}
+              onChange={handleChange}
+            />
 
             <hr style={{ borderColor: "#c9c4d3" }} />
 
-            {/* Security */}
-            <section>
-              <h3
-                className="mb-4 flex items-center gap-2 font-semibold"
-                style={{
-                  fontFamily: "ibmPlexSans, sans-serif",
-                  fontSize: "24px",
-                  lineHeight: "32px",
-                  color: "#1c1b21",
-                }}
-              >
-                <Lock className="w-6 h-6" style={{ color: "#352481" }} />
-                الأمان
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-1">
-                  <label
-                    className="font-medium"
-                    style={{
-                      fontFamily: "ibmPlexSans, sans-serif",
-                      fontSize: "14px",
-                      color: "#484551",
-                    }}
-                  >
-                    كلمة المرور *
-                  </label>
-                  <Input
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    type="password"
-                    dir="ltr"
-                    className="px-4 py-2 rounded-lg border text-left h-auto"
-                    style={{
-                      backgroundColor: "#fdf8ff",
-                      borderColor: errors.password ? "#ba1a1a" : "#c9c4d3",
-                      fontFamily: "notoSans, sans-serif",
-                      fontSize: "16px",
-                    }}
-                  />
-                  {errors.password && (
-                    <span className="text-sm text-error">
-                      {errors.password}
-                    </span>
-                  )}
-                </div>
+            <SecuritySection
+              formData={formData}
+              errors={errors}
+              onChange={handleChange}
+            />
 
-                <div className="flex flex-col gap-1">
-                  <label
-                    className="font-medium"
-                    style={{
-                      fontFamily: "ibmPlexSans, sans-serif",
-                      fontSize: "14px",
-                      color: "#484551",
-                    }}
-                  >
-                    تأكيد كلمة المرور *
-                  </label>
-                  <Input
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    type="password"
-                    dir="ltr"
-                    className="px-4 py-2 rounded-lg border text-left h-auto"
-                    style={{
-                      backgroundColor: "#fdf8ff",
-                      borderColor: errors.confirmPassword
-                        ? "#ba1a1a"
-                        : "#c9c4d3",
-                      fontFamily: "notoSans, sans-serif",
-                      fontSize: "16px",
-                    }}
-                  />
-                  {errors.confirmPassword && (
-                    <span className="text-sm text-error">
-                      {errors.confirmPassword}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Server Error */}
+            {/* Server error */}
             {error && (
               <div
                 className="p-4 rounded-lg border text-center"
@@ -509,6 +205,7 @@ export default function AddUserPage() {
               >
                 إلغاء
               </Button>
+
               <Button
                 type="submit"
                 disabled={status === "loading" || status === "succeeded"}
